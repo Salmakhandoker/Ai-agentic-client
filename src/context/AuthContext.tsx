@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { config } from '../config/environment';
 
 // Configure Axios Defaults
-axios.defaults.baseURL = 'http://localhost:5000/api';
+axios.defaults.baseURL = config.apiUrl;
 
 interface UserProfile {
   budget: number;
@@ -24,7 +25,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
-  googleLogin: (email: string, username: string, googleId: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
@@ -90,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
   };
 
-  const googleLogin = async (email: string, username: string, googleId: string) => {
-    const res = await axios.post('/auth/google', { email, username, googleId });
+  const googleLogin = async (credential: string) => {
+    const res = await axios.post('/auth/google', { credential });
     const { token: jwtToken, user: userData } = res.data;
     localStorage.setItem('aetheria_token', jwtToken);
     setToken(jwtToken);

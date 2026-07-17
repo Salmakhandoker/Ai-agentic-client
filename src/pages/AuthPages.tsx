@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles, Mail, Lock, User, Chrome, Loader2 } from 'lucide-react';
+import { config } from '../config/environment';
 
 export const AuthPages: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
   const { login, register, googleLogin } = useAuth();
@@ -55,20 +56,61 @@ export const AuthPages: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) =>
     }
   };
 
-  // Simulated Google Authentication Sign-In
-  const handleGoogleLogin = async () => {
-    setErrorMsg('');
-    setIsSubmitting(true);
-    try {
-      // Simulate OAuth redirect and credential retrieval
-      await googleLogin('google.traveler@gmail.com', 'GoogleExplorer', 'google-oauth2|987654321');
-      navigate('/explore');
-    } catch (err) {
-      setErrorMsg('Failed to process Google sign-in.');
-    } finally {
-      setIsSubmitting(false);
+  // Google Identity Services (GIS) Sign-In
+  useEffect(() => {
+    const initializeGoogle = () => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: config.googleClientId,
+          callback: async (response: any) => {
+            setErrorMsg('');
+            setIsSubmitting(true);
+            try {
+              await googleLogin(response.credential);
+              navigate('/explore');
+            } catch (err: any) {
+              console.error(err);
+              setErrorMsg(err.response?.data?.message || 'Failed to authenticate with Google.');
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+          auto_select: false,
+        });
+
+        const btnContainer = document.getElementById('google-signin-btn');
+        if (btnContainer) {
+          google.accounts.id.renderButton(
+            btnContainer,
+            {
+              theme: 'filled_black',
+              size: 'large',
+              text: 'signin_with',
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: btnContainer.clientWidth || 190,
+            }
+          );
+        }
+
+        // Trigger One-Tap prompt
+        google.accounts.id.prompt();
+      }
+    };
+
+    if ((window as any).google) {
+      initializeGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if ((window as any).google) {
+          initializeGoogle();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
     }
-  };
+  }, [googleLogin, navigate]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
@@ -155,19 +197,12 @@ export const AuthPages: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) =>
         </div>
 
         {/* Google OAuth & Demo buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isSubmitting}
-            className="flex items-center justify-center space-x-2 bg-slateCustom-800 hover:bg-slateCustom-900 border border-slate-700 py-3 rounded-xl text-slate-200 text-xs font-bold transition-all cursor-pointer"
-          >
-            <Chrome className="w-4 h-4 text-red-400 shrink-0" />
-            <span>Google Sign In</span>
-          </button>
+        <div className="grid grid-cols-2 gap-4 items-center">
+          <div id="google-signin-btn" className="w-full h-[44px] flex items-center justify-center rounded-xl overflow-hidden"></div>
           <button
             onClick={handleDemoLogin}
             disabled={isSubmitting}
-            className="flex items-center justify-center space-x-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 rounded-xl text-primary text-xs font-bold transition-all cursor-pointer"
+            className="flex items-center justify-center space-x-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 rounded-xl text-primary text-xs font-bold transition-all cursor-pointer h-[44px]"
           >
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
             <span>Demo Autofill</span>
