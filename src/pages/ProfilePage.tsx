@@ -47,7 +47,7 @@ export const ProfilePage: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  // Query to fetch recommended matching adventures
+  // Query to fetch recommended matching adventures***
   const { data: recData, refetch: getRecs, isFetching: recLoading, error: recError } = useQuery<RecommendationResponse>({
     queryKey: ['my-recommendations'],
     queryFn: async () => {
