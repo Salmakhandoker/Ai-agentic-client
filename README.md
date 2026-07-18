@@ -162,10 +162,7 @@ VITE_GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
 
 ## 🚀 Local Development Setup
 
-### 1. Clone the repositories
-```bash
-git clone <backend-repo-url> Ai-project-server-side
-git clone <frontend-repo-url> Ai-project-client-side
+
 ```
 
 ### 2. Backend
